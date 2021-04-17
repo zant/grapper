@@ -9,16 +9,17 @@ import (
 )
 
 func main() {
-  client, err := ethclient.Dial("https://mainnet.infura.io/v3/d851d38fbced4fb2bd8ea0d049af97a1")
+  client, err := ethclient.Dial("HTTP://127.0.0.1:7545")
   if err != nil {
     log.Fatal(err)
   }
   _ = client
 
-  txWallet, err := wallet.NewWalletFromFile(".wallets/pk1")
+  txWallet, err := wallet.NewWalletFromFile(client, ".wallets/pk1")
   if err != nil {
     log.Fatal(err)
   }
 
   fmt.Println(txWallet.Address())
+  fmt.Println(txWallet.Balance())
 }
