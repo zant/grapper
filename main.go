@@ -5,7 +5,7 @@ import (
   "log"
 
   "github.com/ethereum/go-ethereum/ethclient"
-  "github.com/zant/geth-wrapper/wallet"
+  "github.com/zant/grapper/wallet"
 )
 
 func main() {

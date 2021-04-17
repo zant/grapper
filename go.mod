@@ -1,4 +1,4 @@
-module github.com/zant/geth-wrapper
+module github.com/zant/grapper
 
 go 1.16
 

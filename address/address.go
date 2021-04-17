@@ -1,12 +1,12 @@
 package address
 
 import (
-  "context"
-  "math/big"
+	"context"
+	"math/big"
 
-  "github.com/ethereum/go-ethereum/common"
-  "github.com/ethereum/go-ethereum/ethclient"
-  "github.com/zant/geth-wrapper/utils"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/zant/grapper/utils"
 )
 
 type Address struct {
