@@ -82,10 +82,9 @@ func (w *Wallet) IsContract() (bool, error) {
   return len(bytecode) > 0, err
 }
 
-func (w *Wallet) Transfer(address string) error {
+func (w *Wallet) Transfer(address string, value *big.Int) error {
   fromAddress := crypto.PubkeyToAddress(*w.publicKey)
   toAddress := common.HexToAddress(address)
-  value := big.NewInt(1000000000000000000)
   gasLimit := uint64(21000)
 
   nonce, err := w.client.PendingNonceAt(context.Background(), fromAddress)

@@ -3,6 +3,7 @@ package main
 import (
   "fmt"
   "log"
+  "math/big"
 
   "github.com/zant/grapper/wallet"
 )
@@ -16,7 +17,8 @@ func main() {
 
   fmt.Println(w.Balance())
   // Transfer to address
-  err = w.Transfer("0x6E45c47bd6Dc099EBdbd95C270323747b55FEC09")
+  value := big.NewInt(1000000000000000000)
+  err = w.Transfer("0x6E45c47bd6Dc099EBdbd95C270323747b55FEC09", value)
   if err != nil {
     log.Fatal(err)
   }
