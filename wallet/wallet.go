@@ -3,11 +3,13 @@ package wallet
 import (
   "context"
   "crypto/ecdsa"
+  "fmt"
   "log"
   "math/big"
 
   "github.com/ethereum/go-ethereum/common"
   "github.com/ethereum/go-ethereum/common/hexutil"
+  "github.com/ethereum/go-ethereum/core/types"
   "github.com/ethereum/go-ethereum/crypto"
   "github.com/ethereum/go-ethereum/ethclient"
   "github.com/zant/grapper/utils"
@@ -76,11 +78,34 @@ func (w *Wallet) IsContract() (bool, error) {
   return len(bytecode) > 0, err
 }
 
-// func (w *Wallet) Transfer(client *ethclient.Client) {
-//   fromAddress := crypto.PubkeyToAddress(*w.publicKey)
-//   nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
-//   if err != nil {
-//     log.Fatal(err)
-//   }
+func (w *Wallet) Transfer(address string) error {
+  fromAddress := crypto.PubkeyToAddress(*w.publicKey)
+  toAddress := common.HexToAddress(address)
+  value := big.NewInt(1000000000000000000)
+  gasLimit := uint64(21000)
 
-// }
+  nonce, err := w.client.PendingNonceAt(context.Background(), fromAddress)
+  if err != nil {
+    log.Fatal(err)
+  }
+  gasPrice, err := w.client.SuggestGasPrice(context.Background())
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, nil)
+  chainId, err := w.client.NetworkID(context.Background())
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), w.privateKey)
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  err = w.client.SendTransaction(context.Background(), signedTx)
+
+  fmt.Printf("Tx sent: %s", signedTx.Hash().Hex())
+  return err
+}
