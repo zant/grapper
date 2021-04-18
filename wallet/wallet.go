@@ -38,7 +38,11 @@ func NewWallet(client *ethclient.Client) (Wallet, error) {
   return Wallet{client, address, privateKey, publicKey}, err
 }
 
-func NewWalletFromFile(client *ethclient.Client, file string) (Wallet, error) {
+func NewWalletFromFile(rpcServer string, file string) (Wallet, error) {
+  client, err := ethclient.Dial(rpcServer)
+  if err != nil {
+    log.Fatal(err)
+  }
   privateKey, err := crypto.LoadECDSA(file)
   publicKey := PublicKeyFromPrivate(privateKey)
   address := crypto.PubkeyToAddress(*publicKey)

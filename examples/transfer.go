@@ -4,20 +4,12 @@ import (
   "fmt"
   "log"
 
-  "github.com/ethereum/go-ethereum/ethclient"
   "github.com/zant/grapper/wallet"
 )
 
 func main() {
-  // Connect to ganache
-  client, err := ethclient.Dial("HTTP://127.0.0.1:7545")
-  if err != nil {
-    log.Fatal(err)
-  }
-  _ = client
-
-  // Read from saved pk
-  w, err := wallet.NewWalletFromFile(client, ".wallets/pk1")
+  // Read from saved pk & connecto to ganache
+  w, err := wallet.NewWalletFromFile("HTTP://127.0.0.1:7545", ".wallets/pk1")
   if err != nil {
     log.Fatal(err)
   }
