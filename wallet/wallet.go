@@ -31,7 +31,11 @@ func PublicKeyFromPrivate(privateKey *ecdsa.PrivateKey) *ecdsa.PublicKey {
   return publicKey
 }
 
-func NewWallet(client *ethclient.Client) (Wallet, error) {
+func NewWallet(rpcServer string) (Wallet, error) {
+  client, err := ethclient.Dial(rpcServer)
+  if err != nil {
+    log.Fatal(err)
+  }
   privateKey, err := crypto.GenerateKey()
   publicKey := PublicKeyFromPrivate(privateKey)
   address := crypto.PubkeyToAddress(*publicKey)
