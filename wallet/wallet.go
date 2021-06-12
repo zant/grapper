@@ -4,9 +4,12 @@ import (
   "context"
   "crypto/ecdsa"
   "fmt"
+  "io/ioutil"
   "log"
   "math/big"
 
+  "github.com/ethereum/go-ethereum/accounts"
+  "github.com/ethereum/go-ethereum/accounts/keystore"
   "github.com/ethereum/go-ethereum/common"
   "github.com/ethereum/go-ethereum/common/hexutil"
   "github.com/ethereum/go-ethereum/core/types"
@@ -15,11 +18,15 @@ import (
   "github.com/zant/grapper/utils"
 )
 
+const passphrase = "utterly unsecure passphrase"
+
 type Wallet struct {
   client     *ethclient.Client
   address    common.Address
   privateKey *ecdsa.PrivateKey
   publicKey  *ecdsa.PublicKey
+  keyStore   *keystore.KeyStore
+  account    accounts.Account
 }
 
 func PublicKeyFromPrivate(privateKey *ecdsa.PrivateKey) *ecdsa.PublicKey {
@@ -31,15 +38,53 @@ func PublicKeyFromPrivate(privateKey *ecdsa.PrivateKey) *ecdsa.PublicKey {
   return publicKey
 }
 
+func createWallet(client *ethclient.Client, privateKey *ecdsa.PrivateKey) (Wallet, error) {
+  publicKey := PublicKeyFromPrivate(privateKey)
+  address := crypto.PubkeyToAddress(*publicKey)
+  keyStore := keystore.NewKeyStore("./wallets", keystore.StandardScryptN, keystore.StandardScryptP)
+  account, err := keyStore.ImportECDSA(privateKey, passphrase)
+
+  return Wallet{client, address, privateKey, publicKey, keyStore, account}, err
+}
+
+func NewWalletFromKeyStore(rpcServer string, accJsonPath string) (Wallet, error) {
+  client, err := ethclient.Dial(rpcServer)
+  if err != nil {
+    return Wallet{}, err
+  }
+
+  jsonAcc, err := ioutil.ReadFile(accJsonPath)
+  if err != nil {
+    return Wallet{}, err
+  }
+  keyStore := keystore.NewKeyStore("./wallets", keystore.StandardScryptN, keystore.StandardScryptP)
+  key, err := keystore.DecryptKey(jsonAcc, passphrase)
+  if err != nil {
+    return Wallet{}, err
+  }
+
+  account, err := keyStore.Import([]byte(jsonAcc), passphrase, passphrase)
+  address := account.Address
+  privateKey := key.PrivateKey
+  publicKey := PublicKeyFromPrivate(privateKey)
+
+  return Wallet{client, address, privateKey, publicKey, keyStore, account}, err
+}
+
 func NewWallet(rpcServer string) (Wallet, error) {
   client, err := ethclient.Dial(rpcServer)
   if err != nil {
     log.Fatal(err)
   }
+
   privateKey, err := crypto.GenerateKey()
-  publicKey := PublicKeyFromPrivate(privateKey)
-  address := crypto.PubkeyToAddress(*publicKey)
-  return Wallet{client, address, privateKey, publicKey}, err
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  w, err := createWallet(client, privateKey)
+
+  return w, err
 }
 
 func NewWalletFromFile(rpcServer string, file string) (Wallet, error) {
@@ -47,10 +92,31 @@ func NewWalletFromFile(rpcServer string, file string) (Wallet, error) {
   if err != nil {
     log.Fatal(err)
   }
+
   privateKey, err := crypto.LoadECDSA(file)
-  publicKey := PublicKeyFromPrivate(privateKey)
-  address := crypto.PubkeyToAddress(*publicKey)
-  return Wallet{client, address, privateKey, publicKey}, err
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  w, err := createWallet(client, privateKey)
+
+  return w, err
+}
+
+func (w *Wallet) Client() *ethclient.Client {
+  return w.client
+}
+
+func (w *Wallet) KeyStore() *keystore.KeyStore {
+  return w.keyStore
+}
+
+func (w *Wallet) Account() accounts.Account {
+  return w.account
+}
+
+func (w *Wallet) PrivateKey() *ecdsa.PrivateKey {
+  return w.privateKey
 }
 
 func (w *Wallet) PrivateKeyHex() string {
@@ -74,6 +140,10 @@ func (w *Wallet) Save(file string) error {
 func (w *Wallet) Balance() (*big.Float, error) {
   balance, err := w.client.BalanceAt(context.Background(), w.address, nil)
   return utils.WeiToEth(balance), err
+}
+
+func (w *Wallet) Nonce() (uint64, error) {
+  return w.client.NonceAt(context.Background(), w.address, nil)
 }
 
 func (w *Wallet) PendingBalance() (*big.Float, error) {
